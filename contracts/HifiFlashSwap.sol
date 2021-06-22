@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
-pragma solidity ^0.7.0;
+pragma solidity >=0.8.0;
 
 import "@paulrberg/contracts/access/Admin.sol";
-import "@paulrberg/contracts/token/erc20/Erc20Interface.sol";
-import "@hifi/protocol/contracts/BalanceSheetInterface.sol";
-import "@hifi/protocol/contracts/FyTokenInterface.sol";
-import "@hifi/protocol/contracts/RedemptionPoolInterface.sol";
+import "@paulrberg/contracts/token/erc20/IErc20.sol";
+import "@hifi/protocol/contracts/core/balanceSheet/IBalanceSheetV1.sol";
+import "@hifi/protocol/contracts/core/hToken/IHToken.sol";
 
 import "./HifiFlashSwapInterface.sol";
 import "./interfaces/UniswapV2PairLike.sol";
@@ -17,10 +16,10 @@ contract HifiFlashSwap is
     Admin // two dependencies
 {
     constructor(address balanceSheet_, address pair_) Admin() {
-        balanceSheet = BalanceSheetInterface(balanceSheet_);
+        balanceSheet = IBalanceSheetV1(balanceSheet_);
         pair = UniswapV2PairLike(pair_);
-        wbtc = Erc20Interface(pair.token0());
-        usdc = Erc20Interface(pair.token1());
+        wbtc = IErc20(pair.token0());
+        usdc = IErc20(pair.token1());
     }
 
     /// @dev Calculate the amount of WBTC that has to be repaid to Uniswap. The formula applied is:
@@ -55,8 +54,7 @@ contract HifiFlashSwap is
 
         // Unpack the ABI encoded data passed by the UniswapV2Pair contract.
         (address fyTokenAddress, address borrower, uint256 minProfit) = abi.decode(data, (address, address, uint256));
-        FyTokenInterface fyToken = FyTokenInterface(fyTokenAddress);
-        fyToken.isFyToken();
+        IHToken fyToken = IHToken(fyTokenAddress);
 
         // Mint fyUSDC and liquidate the borrower.
         uint256 mintedFyUsdcAmount = mintFyUsdc(fyToken, usdcAmount);
@@ -84,18 +82,16 @@ contract HifiFlashSwap is
         );
     }
 
-    /// @dev Supply the USDC to the RedemptionPool and mint fyUSDC.
-    function mintFyUsdc(FyTokenInterface fyToken, uint256 usdcAmount) internal returns (uint256) {
-        RedemptionPoolInterface redemptionPool = fyToken.redemptionPool();
-
-        // Allow the RedemptionPool to spend USDC if allowance not enough.
-        uint256 allowance = usdc.allowance(address(this), address(redemptionPool));
+    /// @dev Supply the USDC to the fyToken and mint fyUSDC.
+    function mintFyUsdc(IHToken fyToken, uint256 usdcAmount) internal returns (uint256) {
+        // Allow the fyToken to spend USDC if allowance not enough.
+        uint256 allowance = usdc.allowance(address(this), address(fyToken));
         if (allowance < usdcAmount) {
-            usdc.approve(address(redemptionPool), type(uint256).max);
+            usdc.approve(address(fyToken), type(uint256).max);
         }
 
         uint256 oldFyTokenBalance = fyToken.balanceOf(address(this));
-        redemptionPool.supplyUnderlying(usdcAmount);
+        fyToken.supplyUnderlying(usdcAmount);
         uint256 newFyTokenBalance = fyToken.balanceOf(address(this));
         uint256 mintedFyUsdcAmount = newFyTokenBalance - oldFyTokenBalance;
         return mintedFyUsdcAmount;
@@ -104,12 +100,12 @@ contract HifiFlashSwap is
     /// @dev Liquidate the borrower by transferring the USDC to the BalanceSheet. In doing this,
     /// the liquidator receives WBTC at a discount.
     function liquidateBorrow(
-        FyTokenInterface fyToken,
+        IHToken fyToken,
         address borrower,
         uint256 mintedFyUsdcAmount
     ) internal returns (uint256) {
         uint256 oldWbtcBalance = wbtc.balanceOf(address(this));
-        fyToken.liquidateBorrow(borrower, mintedFyUsdcAmount);
+        balanceSheet.liquidateBorrow(borrower, fyToken, mintedFyUsdcAmount, wbtc);
         uint256 newWbtcBalance = wbtc.balanceOf(address(this));
         uint256 clutchedWbtcAmount = newWbtcBalance - oldWbtcBalance;
         return clutchedWbtcAmount;

@@ -11,8 +11,9 @@
     "url": "https://github.com/hifi-finance/hifi-flash-swap/issues"
   },
   "dependencies": {
-    "@hifi/protocol": "1.0.0",
-    "@paulrberg/contracts": "1.3.0",
+    "@hifi/protocol": "git://github.com/hifi-finance/hifi-protocol.git#aa51c7868a5b664a868c0af6c3e0ece7f4e00fef",
+    "@openzeppelin/contracts-upgradeable": "^4.1.0",
+    "@paulrberg/contracts": "^3.2.1",
     "@uniswap/v2-core": "1.0.1"
   },
   "devDependencies": {

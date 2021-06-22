@@ -1242,10 +1242,11 @@ __metadata:
     "@ethersproject/abstract-signer": ^5.3.0
     "@ethersproject/bignumber": ^5.3.0
     "@ethersproject/contracts": ^5.3.0
-    "@hifi/protocol": 1.0.0
+    "@hifi/protocol": "git://github.com/hifi-finance/hifi-protocol.git#aa51c7868a5b664a868c0af6c3e0ece7f4e00fef"
     "@nomiclabs/hardhat-ethers": ^2.0.2
     "@nomiclabs/hardhat-waffle": ^2.0.1
-    "@paulrberg/contracts": 1.3.0
+    "@openzeppelin/contracts-upgradeable": ^4.1.0
+    "@paulrberg/contracts": ^3.2.1
     "@typechain/ethers-v5": ^7.0.1
     "@typechain/hardhat": ^2.0.2
     "@types/chai": ^4.2.19
@@ -1284,15 +1285,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@hifi/protocol@npm:1.0.0":
+"@hifi/protocol@git://github.com/hifi-finance/hifi-protocol.git#aa51c7868a5b664a868c0af6c3e0ece7f4e00fef":
   version: 1.0.0
-  resolution: "@hifi/protocol@npm:1.0.0"
+  resolution: "@hifi/protocol@git://github.com/hifi-finance/hifi-protocol.git#commit=aa51c7868a5b664a868c0af6c3e0ece7f4e00fef"
   dependencies:
-    "@paulrberg/contracts": 1.3.0
-    solc: 0.7.6
-  peerDependencies:
-    "@paulrberg/contracts": 1.3.0
-  checksum: d758415ada1daf2956ad75c7c5136c0bea1bd38d1066949a451eb98b5422694e7fbf573d318cc44b0c24ede497fccb66d40d6c63951dd958c84b333aaa137824
+    "@paulrberg/contracts": ^3.2.1
+    prb-math: ^2.0.1
+  checksum: 9584a2292b0a398436b37a8deb2f1e59d4a18a8d8c77f2b6ce5d59e09b11518aa5cd2d33de9debac60903accda561157b5182c4441cd8181ad62c39439333631
   languageName: node
   linkType: hard
 
@@ -1358,10 +1357,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@paulrberg/contracts@npm:1.3.0":
-  version: 1.3.0
-  resolution: "@paulrberg/contracts@npm:1.3.0"
-  checksum: 57cbaabbade94b7e9a55853253e194c5eea3d66f81c0fd46e1d5417a833fd470b9478a6ac931240c4bd27a5e93eaceb0bd646fc7b1e03b9c6f06929d7d54d38b
+"@openzeppelin/contracts-upgradeable@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "@openzeppelin/contracts-upgradeable@npm:4.1.0"
+  checksum: 11a0273025d73ffddaf3407c20bd0463019f4d3f98b0e9a57b9dc316860ceb642481e48699e72439189d2cb0bd17613c5472e54fe44e276cf74d7dd475f367b3
+  languageName: node
+  linkType: hard
+
+"@paulrberg/contracts@npm:^3.2.1":
+  version: 3.2.1
+  resolution: "@paulrberg/contracts@npm:3.2.1"
+  dependencies:
+    prb-math: ^2.0.0
+  peerDependencies:
+    prb-math: ^2.0.0
+  checksum: cdacd82904eaa3783edcd25c88488caa1ba0425625ef3be87f6345960916fd66479e56e8fd79685e766fa618f99561f843a972da777f3d1e5bfded63b70a9e73
   languageName: node
   linkType: hard
 
@@ -11107,6 +11117,13 @@ fsevents@~2.3.1:
   languageName: node
   linkType: hard
 
+"prb-math@npm:^2.0.0, prb-math@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "prb-math@npm:2.0.1"
+  checksum: 922754cd3888c9021161b1b4671232895b1f82d95a75eec5000d8389c011eac09fabf4b2a873a186ee54003f682872fea01605d6c35d229326c9149916c48660
+  languageName: node
+  linkType: hard
+
 "precond@npm:0.2":
   version: 0.2.3
   resolution: "precond@npm:0.2.3"
@@ -12557,25 +12574,6 @@ resolve@1.1.x:
   bin:
     solcjs: solcjs
   checksum: 9d2e2e0f3166c4fc26a15aea6921a2ae85ea084ef46c91c5e4d894667f89849913009eaf8056d8c4072629a337866b83d1209f2a8eb2d8a10e2b264c6527f6d8
-  languageName: node
-  linkType: hard
-
-"solc@npm:0.7.6":
-  version: 0.7.6
-  resolution: "solc@npm:0.7.6"
-  dependencies:
-    command-exists: ^1.2.8
-    commander: 3.0.2
-    follow-redirects: ^1.12.1
-    fs-extra: ^0.30.0
-    js-sha3: 0.8.0
-    memorystream: ^0.3.1
-    require-from-string: ^2.0.0
-    semver: ^5.5.0
-    tmp: 0.0.33
-  bin:
-    solcjs: solcjs
-  checksum: 57da385bddd8e3ea3efb1eb78ffa88019a4745c6604fdc2696645878b73e0f3950188786360d504f3567a833bb5b2c582925e2ef786ccbe771c94e372340d132
   languageName: node
   linkType: hard
 
