@@ -10,7 +10,6 @@ import "./interfaces/UniswapV2PairLike.sol";
 /// @author Hifi
 abstract contract HifiFlashSwapStorage {
     IBalanceSheetV1 public balanceSheet;
-    UniswapV2PairLike public pair;
+    mapping(address => UniswapV2PairLike) public pairs;
     IErc20 public usdc;
-    IErc20 public wbtc;
 }

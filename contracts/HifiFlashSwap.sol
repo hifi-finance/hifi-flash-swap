@@ -15,63 +15,74 @@ contract HifiFlashSwap is
     HifiFlashSwapInterface, // one dependency
     Admin // two dependencies
 {
-    constructor(address balanceSheet_, address pair_) Admin() {
+    constructor(address balanceSheet_, address[] memory pairs_) Admin() {
         balanceSheet = IBalanceSheetV1(balanceSheet_);
-        pair = UniswapV2PairLike(pair_);
-        wbtc = IErc20(pair.token0());
-        usdc = IErc20(pair.token1());
+        for (uint256 i = 0; i < pairs_.length; i++) {
+            pairs[pairs_[i]] = UniswapV2PairLike(pairs_[i]);
+        }
+        usdc = IErc20(pairs[pairs_[0]].token1());
     }
 
-    /// @dev Calculate the amount of WBTC that has to be repaid to Uniswap. The formula applied is:
+    /// @dev Calculate the amount of collateral that has to be repaid to Uniswap. The formula applied is:
     ///
-    ///              (wbtcReserves * usdcAmount) * 1000
+    ///              (collateralReserves * usdcAmount) * 1000
     /// repayment = ------------------------------------
     ///              (usdcReserves - usdcAmount) * 997
     ///
     /// See "getAmountIn" and "getAmountOut" in UniswapV2Library.sol. Flash swaps that are repaid via
     /// the corresponding pair token is akin to a normal swap, so the 0.3% LP fee applies.
-    function getRepayWbtcAmount(uint256 usdcAmount) public view returns (uint256) {
-        (uint112 wbtcReserves, uint112 usdcReserves, ) = pair.getReserves();
+    function getRepayCollateralAmount(UniswapV2PairLike pair, uint256 usdcAmount) public view returns (uint256) {
+        (uint112 collateralReserves, uint112 usdcReserves, ) = pair.getReserves();
 
         // Note that we don't need CarefulMath because the UniswapV2Pair.sol contract performs sanity
-        // checks on "wbtcAmount" and "usdcAmount" before calling the current contract.
-        uint256 numerator = wbtcReserves * usdcAmount * 1000;
+        // checks on "collateralAmount" and "usdcAmount" before calling the current contract.
+        uint256 numerator = collateralReserves * usdcAmount * 1000;
         uint256 denominator = (usdcReserves - usdcAmount) * 997;
-        uint256 wbtcRepaymentAmount = numerator / denominator + 1;
+        uint256 collateralRepaymentAmount = numerator / denominator + 1;
 
-        return wbtcRepaymentAmount;
+        return collateralRepaymentAmount;
     }
 
     /// @dev Called by the UniswapV2Pair contract.
     function uniswapV2Call(
         address sender,
-        uint256 wbtcAmount,
+        uint256 collateralAmount,
         uint256 usdcAmount,
         bytes calldata data
     ) external override {
-        require(msg.sender == address(pair), "ERR_UNISWAP_V2_CALL_NOT_AUTHORIZED");
-        require(wbtcAmount == 0, "ERR_WBTC_AMOUNT_ZERO");
+        require(address(pairs[msg.sender]) != address(0), "ERR_UNISWAP_V2_CALL_NOT_AUTHORIZED");
+        require(collateralAmount == 0, "ERR_COLLATERAL_AMOUNT_ZERO");
 
         // Unpack the ABI encoded data passed by the UniswapV2Pair contract.
-        (address hTokenAddress, address borrower, uint256 minProfit) = abi.decode(data, (address, address, uint256));
-        IHToken hToken = IHToken(hTokenAddress);
+        (address borrower, IHToken hToken, uint256 minProfit, IErc20 collateral) = abi.decode(
+            data,
+            (address, IHToken, uint256, IErc20)
+        );
 
         // Mint hUSDC and liquidate the borrower.
         uint256 mintedHUsdcAmount = mintHUsdc(hToken, usdcAmount);
-        uint256 clutchedWbtcAmount = liquidateBorrow(hToken, borrower, mintedHUsdcAmount);
+        uint256 clutchedCollateralAmount = liquidateBorrow(borrower, hToken, mintedHUsdcAmount, collateral);
 
-        // Calculate the amount of WBTC required.
-        uint256 repayWbtcAmount = getRepayWbtcAmount(usdcAmount);
-        require(clutchedWbtcAmount > repayWbtcAmount + minProfit, "ERR_INSUFFICIENT_PROFIT");
+        // Calculate the amount of collateral required.
+        uint256 repayCollateralAmount = getRepayCollateralAmount(pairs[msg.sender], usdcAmount);
+        require(clutchedCollateralAmount > repayCollateralAmount + minProfit, "ERR_INSUFFICIENT_PROFIT");
 
         // Pay back the loan.
-        require(wbtc.transfer(address(pair), repayWbtcAmount), "ERR_WBTC_TRANSFER");
+        require(collateral.transfer(address(pairs[msg.sender]), repayCollateralAmount), "ERR_COLLATERAL_TRANSFER");
 
         // Reap the profit.
-        uint256 profit = clutchedWbtcAmount - repayWbtcAmount;
-        wbtc.transfer(sender, profit);
+        uint256 profit = clutchedCollateralAmount - repayCollateralAmount;
+        collateral.transfer(sender, profit);
 
-        emit FlashLiquidate(sender, borrower, hTokenAddress, usdcAmount, mintedHUsdcAmount, clutchedWbtcAmount, profit);
+        emit FlashLiquidate(
+            sender,
+            borrower,
+            address(hToken),
+            usdcAmount,
+            mintedHUsdcAmount,
+            clutchedCollateralAmount,
+            profit
+        );
     }
 
     /// @dev Supply the USDC to the hToken and mint hUSDC.
@@ -90,16 +101,17 @@ contract HifiFlashSwap is
     }
 
     /// @dev Liquidate the borrower by transferring the USDC to the BalanceSheet. In doing this,
-    /// the liquidator receives WBTC at a discount.
+    /// the liquidator receives collateral at a discount.
     function liquidateBorrow(
-        IHToken hToken,
         address borrower,
-        uint256 mintedHUsdcAmount
+        IHToken hToken,
+        uint256 mintedHUsdcAmount,
+        IErc20 collateral
     ) internal returns (uint256) {
-        uint256 oldWbtcBalance = wbtc.balanceOf(address(this));
-        balanceSheet.liquidateBorrow(borrower, hToken, mintedHUsdcAmount, wbtc);
-        uint256 newWbtcBalance = wbtc.balanceOf(address(this));
-        uint256 clutchedWbtcAmount = newWbtcBalance - oldWbtcBalance;
-        return clutchedWbtcAmount;
+        uint256 oldCollateralBalance = collateral.balanceOf(address(this));
+        balanceSheet.liquidateBorrow(borrower, hToken, mintedHUsdcAmount, collateral);
+        uint256 newCollateralBalance = collateral.balanceOf(address(this));
+        uint256 clutchedCollateralAmount = newCollateralBalance - oldCollateralBalance;
+        return clutchedCollateralAmount;
     }
 }
