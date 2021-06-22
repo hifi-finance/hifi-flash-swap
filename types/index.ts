@@ -1,7 +1,7 @@
 import { BalanceSheet } from "@hifi/protocol/typechain/BalanceSheet";
 import { ChainlinkOperator } from "@hifi/protocol/typechain/ChainlinkOperator";
 import { Fintroller } from "@hifi/protocol/typechain/Fintroller";
-import { FyToken } from "@hifi/protocol/typechain/FyToken";
+import { HToken } from "@hifi/protocol/typechain/HToken";
 import { RedemptionPool } from "@hifi/protocol/typechain/RedemptionPool";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 
@@ -13,7 +13,7 @@ import { UniswapV2Pair } from "./contracts/UniswapV2Pair";
 export interface Contracts {
   balanceSheet: BalanceSheet;
   fintroller: Fintroller;
-  fyToken: FyToken;
+  hToken: HToken;
   hifiFlashSwap: HifiFlashSwap;
   oracle: ChainlinkOperator;
   redemptionPool: RedemptionPool;

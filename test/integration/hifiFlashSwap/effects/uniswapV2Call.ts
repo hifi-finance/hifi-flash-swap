@@ -6,15 +6,15 @@ import { expect } from "chai";
 import { TEN } from "../../../../helpers/constants";
 import {
   getPartialWbtcAmount,
-  getWholeFyUsdcAmount,
+  getWholeHUsdcAmount,
   getWholeOraclePrice,
   getWholeUsdcAmount,
   getWholeWbtcAmount,
 } from "../../../../helpers/numbers";
 import { BalanceSheetErrors, GenericErrors, HifiFlashSwapErrors } from "../../../shared/errors";
 
-const fyUsdc10k: BigNumber = getWholeFyUsdcAmount(10000);
-const fyUsdc1m: BigNumber = getWholeFyUsdcAmount(1000000);
+const hUsdc10k: BigNumber = getWholeHUsdcAmount(10000);
+const hUsdc1m: BigNumber = getWholeHUsdcAmount(1000000);
 const p1: BigNumber = getWholeOraclePrice(1);
 const p10k: BigNumber = getWholeOraclePrice(10000);
 const p12dot5k: BigNumber = getWholeOraclePrice(12500);
@@ -46,7 +46,7 @@ async function bumpPoolReserves(
 
 function encodeData(this: Mocha.Context, minProfit: string): string {
   const types = ["address", "address", "uint256"];
-  const values = [this.contracts.fyToken.address, this.signers.borrower.address, minProfit];
+  const values = [this.contracts.hToken.address, this.signers.borrower.address, minProfit];
   const data: string = defaultAbiCoder.encode(types, values);
   return data;
 }
@@ -118,7 +118,7 @@ export default function shouldBehaveLikeUniswapV2Call(): void {
 
       beforeEach(async function () {
         // List the bond in the Fintroller.
-        await this.contracts.fintroller.connect(this.signers.admin).listBond(this.contracts.fyToken.address);
+        await this.contracts.fintroller.connect(this.signers.admin).listBond(this.contracts.hToken.address);
 
         // Set the liquidation incentive to 110%.
         const liquidationIncentiveMantissa: BigNumber = TEN.pow(18).add(TEN.pow(17));
@@ -126,32 +126,32 @@ export default function shouldBehaveLikeUniswapV2Call(): void {
           .connect(this.signers.admin)
           .setLiquidationIncentive(liquidationIncentiveMantissa);
 
-        // Set the debt ceiling to 1m fyUSDC.
-        const debtCeiling: BigNumber = fyUsdc1m;
+        // Set the debt ceiling to 1m hUSDC.
+        const debtCeiling: BigNumber = hUsdc1m;
         await this.contracts.fintroller
           .connect(this.signers.admin)
-          .setBondDebtCeiling(this.contracts.fyToken.address, debtCeiling);
+          .setBondDebtCeiling(this.contracts.hToken.address, debtCeiling);
 
         // Mint 1 WBTC and approve the Balance Sheet to spend it all.
         await this.contracts.wbtc.mint(this.signers.borrower.address, wbtc1);
         await this.contracts.wbtc.connect(this.signers.borrower).approve(this.contracts.balanceSheet.address, wbtc1);
 
         // Open the vault.
-        await this.contracts.balanceSheet.connect(this.signers.borrower).openVault(this.contracts.fyToken.address);
+        await this.contracts.balanceSheet.connect(this.signers.borrower).openVault(this.contracts.hToken.address);
 
         // Deposit the 1 WBTC in the Balance Sheet.
         await this.contracts.balanceSheet
           .connect(this.signers.borrower)
-          .depositCollateral(this.contracts.fyToken.address, wbtc1);
+          .depositCollateral(this.contracts.hToken.address, wbtc1);
 
         // Lock the 1 WBTC in the vault.
         await this.contracts.balanceSheet
           .connect(this.signers.borrower)
-          .lockCollateral(this.contracts.fyToken.address, wbtc1);
+          .lockCollateral(this.contracts.hToken.address, wbtc1);
 
-        // Borrow 10k fyUSDC.
-        const borrowAmount: BigNumber = fyUsdc10k;
-        await this.contracts.fyToken.connect(this.signers.borrower).borrow(borrowAmount);
+        // Borrow 10k hUSDC.
+        const borrowAmount: BigNumber = hUsdc10k;
+        await this.contracts.hToken.connect(this.signers.borrower).borrow(borrowAmount);
       });
 
       describe("when the borrower is not underwater", function () {
@@ -213,10 +213,10 @@ export default function shouldBehaveLikeUniswapV2Call(): void {
             });
 
             it("flas swaps USDC via Uniswap and makes a WBTC profit via Hifi", async function () {
-              const repayFyUsdcAmount: BigNumber = fyUsdc10k;
+              const repayHUsdcAmount: BigNumber = hUsdc10k;
               const clutchableWbtcAmount: BigNumber = await this.contracts.balanceSheet.getClutchableCollateral(
-                this.contracts.fyToken.address,
-                repayFyUsdcAmount,
+                this.contracts.hToken.address,
+                repayHUsdcAmount,
               );
               const repayWbtcAmount: BigNumber = await this.contracts.hifiFlashSwap.getRepayWbtcAmount(usdcAmount);
               const expectedWbtcProfit = clutchableWbtcAmount.sub(repayWbtcAmount);
@@ -234,10 +234,10 @@ export default function shouldBehaveLikeUniswapV2Call(): void {
             });
 
             it("emits a FlashLiquidate event", async function () {
-              const repayFyUsdcAmount: BigNumber = fyUsdc10k;
+              const repayHUsdcAmount: BigNumber = hUsdc10k;
               const clutchableWbtcAmount: BigNumber = await this.contracts.balanceSheet.getClutchableCollateral(
-                this.contracts.fyToken.address,
-                repayFyUsdcAmount,
+                this.contracts.hToken.address,
+                repayHUsdcAmount,
               );
               const repayWbtcAmount: BigNumber = await this.contracts.hifiFlashSwap.getRepayWbtcAmount(usdcAmount);
               const expectedWbtcProfit = clutchableWbtcAmount.sub(repayWbtcAmount);
@@ -254,9 +254,9 @@ export default function shouldBehaveLikeUniswapV2Call(): void {
                 .withArgs(
                   this.signers.liquidator.address,
                   this.signers.borrower.address,
-                  this.contracts.fyToken.address,
+                  this.contracts.hToken.address,
                   usdcAmount,
-                  fyUsdc10k,
+                  hUsdc10k,
                   clutchableWbtcAmount,
                   expectedWbtcProfit,
                 );

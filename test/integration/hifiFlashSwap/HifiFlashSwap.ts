@@ -7,7 +7,7 @@ export function integrationTestHifiFlashSwap(): void {
       const {
         balanceSheet,
         fintroller,
-        fyToken,
+        hToken,
         hifiFlashSwap,
         oracle,
         redemptionPool,
@@ -19,7 +19,7 @@ export function integrationTestHifiFlashSwap(): void {
       } = await this.loadFixture(integrationFixture);
       this.contracts.balanceSheet = balanceSheet;
       this.contracts.fintroller = fintroller;
-      this.contracts.fyToken = fyToken;
+      this.contracts.hToken = hToken;
       this.contracts.hifiFlashSwap = hifiFlashSwap;
       this.contracts.oracle = oracle;
       this.contracts.redemptionPool = redemptionPool;

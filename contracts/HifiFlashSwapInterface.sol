@@ -11,9 +11,9 @@ abstract contract HifiFlashSwapInterface is
     event FlashLiquidate(
         address indexed liquidator,
         address indexed borrower,
-        address indexed fyToken,
+        address indexed hToken,
         uint256 flashBorrowedUsdcAmount,
-        uint256 mintedFyUsdcAmount,
+        uint256 mintedHUsdcAmount,
         uint256 clutchedWbtcAmount,
         uint256 wbtcProfit
     );

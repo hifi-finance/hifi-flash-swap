@@ -2,20 +2,20 @@ import { Signer } from "@ethersproject/abstract-signer";
 import balanceSheetArtifact from "@hifi/protocol/artifacts/BalanceSheet.json";
 import chainlinkOperatorArtifact from "@hifi/protocol/artifacts/ChainlinkOperator.json";
 import fintrollerArtifact from "@hifi/protocol/artifacts/Fintroller.json";
-import fyTokenArtifact from "@hifi/protocol/artifacts/FyToken.json";
+import hTokenArtifact from "@hifi/protocol/artifacts/HToken.json";
 import redemptionPoolArtifact from "@hifi/protocol/artifacts/RedemptionPool.json";
 import { BalanceSheet } from "@hifi/protocol/typechain/BalanceSheet";
 import { ChainlinkOperator } from "@hifi/protocol/typechain/ChainlinkOperator";
 import { Fintroller } from "@hifi/protocol/typechain/Fintroller";
-import { FyToken } from "@hifi/protocol/typechain/FyToken";
+import { HToken } from "@hifi/protocol/typechain/HToken";
 import { RedemptionPool } from "@hifi/protocol/typechain/RedemptionPool";
 import uniswapV2PairArtifact from "@uniswap/v2-core/build/UniswapV2Pair.json";
 import hre from "hardhat";
 import { Artifact } from "hardhat/types";
 
-import { FY_TOKEN_EXPIRATION_TIME } from "../../helpers/constants";
+import { H_TOKEN_EXPIRATION_TIME } from "../../helpers/constants";
 import { USDC_DECIMALS, USDC_NAME, USDC_SYMBOL, WBTC_DECIMALS, WBTC_NAME, WBTC_SYMBOL } from "../../helpers/constants";
-import { getFyTokenName, getFyTokenSymbol } from "../../helpers/contracts";
+import { getHTokenName, getHTokenSymbol } from "../../helpers/contracts";
 import { GodModeErc20 } from "../../typechain/GodModeErc20";
 import { HifiFlashSwap } from "../../typechain/HifiFlashSwap";
 import { SimplePriceFeed } from "../../typechain/SimplePriceFeed";
@@ -26,7 +26,7 @@ const { deployContract } = hre.waffle;
 type IntegrationFixtureReturnType = {
   balanceSheet: BalanceSheet;
   fintroller: Fintroller;
-  fyToken: FyToken;
+  hToken: HToken;
   hifiFlashSwap: HifiFlashSwap;
   redemptionPool: RedemptionPool;
   usdc: GodModeErc20;
@@ -62,11 +62,11 @@ export async function integrationFixture(signers: Signer[]): Promise<Integration
     await deployContract(deployer, balanceSheetArtifact, [fintroller.address])
   );
 
-  const fyToken: FyToken = <FyToken>(
-    await deployContract(deployer, fyTokenArtifact, [
-      getFyTokenName(FY_TOKEN_EXPIRATION_TIME),
-      getFyTokenSymbol(FY_TOKEN_EXPIRATION_TIME),
-      FY_TOKEN_EXPIRATION_TIME,
+  const hToken: HToken = <HToken>(
+    await deployContract(deployer, hTokenArtifact, [
+      getHTokenName(H_TOKEN_EXPIRATION_TIME),
+      getHTokenSymbol(H_TOKEN_EXPIRATION_TIME),
+      H_TOKEN_EXPIRATION_TIME,
       fintroller.address,
       balanceSheet.address,
       usdc.address,
@@ -74,7 +74,7 @@ export async function integrationFixture(signers: Signer[]): Promise<Integration
     ])
   );
 
-  const redemptionPoolAddress = await fyToken.redemptionPool();
+  const redemptionPoolAddress = await hToken.redemptionPool();
   const redemptionPool = <RedemptionPool>(
     new hre.ethers.Contract(redemptionPoolAddress, redemptionPoolArtifact.abi, hre.ethers.provider)
   );
@@ -90,7 +90,7 @@ export async function integrationFixture(signers: Signer[]): Promise<Integration
   return {
     balanceSheet,
     fintroller,
-    fyToken,
+    hToken,
     hifiFlashSwap,
     redemptionPool,
     usdc,

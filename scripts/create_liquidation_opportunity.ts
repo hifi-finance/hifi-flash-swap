@@ -1,8 +1,8 @@
 import { BigNumber } from "@ethersproject/bignumber";
 import balanceSheetArtifact from "@hifi/protocol/artifacts/BalanceSheet.json";
-import fyTokenArtifact from "@hifi/protocol/artifacts/FyToken.json";
+import hTokenArtifact from "@hifi/protocol/artifacts/HToken.json";
 import { BalanceSheet } from "@hifi/protocol/typechain/BalanceSheet";
-import { FyToken } from "@hifi/protocol/typechain/FyToken";
+import { HToken } from "@hifi/protocol/typechain/HToken";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import uniswapV2PairArtifact from "@uniswap/v2-core/build/UniswapV2Pair.json";
 import hre from "hardhat";
@@ -11,7 +11,7 @@ import { Artifact } from "hardhat/types";
 import { getEnvVar } from "../helpers/env";
 import {
   getPartialWbtcAmount,
-  getWholeFyUsdcAmount,
+  getWholeHUsdcAmount,
   getWholeOraclePrice,
   getWholeUsdcAmount,
   getWholeWbtcAmount,
@@ -20,7 +20,7 @@ import { GodModeErc20 } from "../typechain/GodModeErc20";
 import { SimplePriceFeed } from "../typechain/SimplePriceFeed";
 import { UniswapV2Pair } from "../types/contracts/UniswapV2Pair";
 
-const fyUsdc10k: BigNumber = getWholeFyUsdcAmount(10000);
+const hUsdc10k: BigNumber = getWholeHUsdcAmount(10000);
 const p12dot5k: BigNumber = getWholeOraclePrice(12500);
 const p20k: BigNumber = getWholeOraclePrice(20000);
 const usdc1dot25m = getWholeUsdcAmount(1250000);
@@ -41,7 +41,7 @@ async function main(): Promise<void> {
   const balanceSheet: BalanceSheet = <BalanceSheet>(
     new ethers.Contract(getEnvVar("BALANCE_SHEET_ADDRESS"), balanceSheetArtifact.abi, signers[0])
   );
-  const fyToken: FyToken = <FyToken>new ethers.Contract(getEnvVar("FY_TOKEN_ADDRESS"), fyTokenArtifact.abi, signers[0]);
+  const hToken: HToken = <HToken>new ethers.Contract(getEnvVar("H_TOKEN_ADDRESS"), hTokenArtifact.abi, signers[0]);
   const uniV2WbtcUsdc: UniswapV2Pair = <UniswapV2Pair>(
     new ethers.Contract(getEnvVar("UNI_V2_WBTC_USDC_ADDRESS"), uniswapV2PairArtifact.abi, signers[0])
   );
@@ -85,20 +85,20 @@ async function main(): Promise<void> {
 
   // Deposit 0.88 WBTC in the BalanceSheet.
   console.log("Depositing collateral ...");
-  await balanceSheet.depositCollateral(fyToken.address, wbtcdot88);
+  await balanceSheet.depositCollateral(hToken.address, wbtcdot88);
   console.log("✨ Just deposited 1 WBTC in the BalanceSheet");
   console.log();
 
   // Lock 0.88 WBTC in the BalanceSheet.
   console.log("Locking collateral ...");
-  await balanceSheet.lockCollateral(fyToken.address, wbtcdot88);
+  await balanceSheet.lockCollateral(hToken.address, wbtcdot88);
   console.log("✨ Just locked 1 WBTC in the BalanceSheet");
   console.log();
 
   // Borrow 10k USDC.
-  console.log("Borrowing fyUSDC ...");
-  await fyToken.borrow(fyUsdc10k);
-  console.log("✨ Just borrowed 10k fyUSDC");
+  console.log("Borrowing hUSDC ...");
+  await hToken.borrow(hUsdc10k);
+  console.log("✨ Just borrowed 10k hUSDC");
   console.log();
 
   // Set the oracle price to 1 WBTC = $12.5k.

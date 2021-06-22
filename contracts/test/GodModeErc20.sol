@@ -16,7 +16,7 @@ contract GodModeErc20 is Erc20 {
 
     /// @notice Destroys tokens out of existence.
     /// @param holder The account whose tokens to burn.
-    /// @param burnAmount The amount of fyTokens to destroy.
+    /// @param burnAmount The amount of hTokens to destroy.
     /// @return bool true = success, otherwise it reverts.
     function burn(address holder, uint256 burnAmount) external returns (bool) {
         burnInternal(holder, burnAmount);
@@ -25,7 +25,7 @@ contract GodModeErc20 is Erc20 {
 
     /// @notice Prints new tokens into existence.
     /// @param beneficiary The account for which to mint the tokens.
-    /// @param mintAmount The amount of fyTokens to print into existence.
+    /// @param mintAmount The amount of hTokens to print into existence.
     /// @return bool true = success, otherwise it reverts.
     function mint(address beneficiary, uint256 mintAmount) external returns (bool) {
         mintInternal(beneficiary, mintAmount);

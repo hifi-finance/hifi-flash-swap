@@ -53,12 +53,12 @@ contract HifiFlashSwap is
         require(wbtcAmount == 0, "ERR_WBTC_AMOUNT_ZERO");
 
         // Unpack the ABI encoded data passed by the UniswapV2Pair contract.
-        (address fyTokenAddress, address borrower, uint256 minProfit) = abi.decode(data, (address, address, uint256));
-        IHToken fyToken = IHToken(fyTokenAddress);
+        (address hTokenAddress, address borrower, uint256 minProfit) = abi.decode(data, (address, address, uint256));
+        IHToken hToken = IHToken(hTokenAddress);
 
-        // Mint fyUSDC and liquidate the borrower.
-        uint256 mintedFyUsdcAmount = mintFyUsdc(fyToken, usdcAmount);
-        uint256 clutchedWbtcAmount = liquidateBorrow(fyToken, borrower, mintedFyUsdcAmount);
+        // Mint hUSDC and liquidate the borrower.
+        uint256 mintedHUsdcAmount = mintHUsdc(hToken, usdcAmount);
+        uint256 clutchedWbtcAmount = liquidateBorrow(hToken, borrower, mintedHUsdcAmount);
 
         // Calculate the amount of WBTC required.
         uint256 repayWbtcAmount = getRepayWbtcAmount(usdcAmount);
@@ -71,41 +71,33 @@ contract HifiFlashSwap is
         uint256 profit = clutchedWbtcAmount - repayWbtcAmount;
         wbtc.transfer(sender, profit);
 
-        emit FlashLiquidate(
-            sender,
-            borrower,
-            fyTokenAddress,
-            usdcAmount,
-            mintedFyUsdcAmount,
-            clutchedWbtcAmount,
-            profit
-        );
+        emit FlashLiquidate(sender, borrower, hTokenAddress, usdcAmount, mintedHUsdcAmount, clutchedWbtcAmount, profit);
     }
 
-    /// @dev Supply the USDC to the fyToken and mint fyUSDC.
-    function mintFyUsdc(IHToken fyToken, uint256 usdcAmount) internal returns (uint256) {
-        // Allow the fyToken to spend USDC if allowance not enough.
-        uint256 allowance = usdc.allowance(address(this), address(fyToken));
+    /// @dev Supply the USDC to the hToken and mint hUSDC.
+    function mintHUsdc(IHToken hToken, uint256 usdcAmount) internal returns (uint256) {
+        // Allow the hToken to spend USDC if allowance not enough.
+        uint256 allowance = usdc.allowance(address(this), address(hToken));
         if (allowance < usdcAmount) {
-            usdc.approve(address(fyToken), type(uint256).max);
+            usdc.approve(address(hToken), type(uint256).max);
         }
 
-        uint256 oldFyTokenBalance = fyToken.balanceOf(address(this));
-        fyToken.supplyUnderlying(usdcAmount);
-        uint256 newFyTokenBalance = fyToken.balanceOf(address(this));
-        uint256 mintedFyUsdcAmount = newFyTokenBalance - oldFyTokenBalance;
-        return mintedFyUsdcAmount;
+        uint256 oldHTokenBalance = hToken.balanceOf(address(this));
+        hToken.supplyUnderlying(usdcAmount);
+        uint256 newHTokenBalance = hToken.balanceOf(address(this));
+        uint256 mintedHUsdcAmount = newHTokenBalance - oldHTokenBalance;
+        return mintedHUsdcAmount;
     }
 
     /// @dev Liquidate the borrower by transferring the USDC to the BalanceSheet. In doing this,
     /// the liquidator receives WBTC at a discount.
     function liquidateBorrow(
-        IHToken fyToken,
+        IHToken hToken,
         address borrower,
-        uint256 mintedFyUsdcAmount
+        uint256 mintedHUsdcAmount
     ) internal returns (uint256) {
         uint256 oldWbtcBalance = wbtc.balanceOf(address(this));
-        balanceSheet.liquidateBorrow(borrower, fyToken, mintedFyUsdcAmount, wbtc);
+        balanceSheet.liquidateBorrow(borrower, hToken, mintedHUsdcAmount, wbtc);
         uint256 newWbtcBalance = wbtc.balanceOf(address(this));
         uint256 clutchedWbtcAmount = newWbtcBalance - oldWbtcBalance;
         return clutchedWbtcAmount;
